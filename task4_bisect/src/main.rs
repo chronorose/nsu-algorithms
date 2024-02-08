@@ -33,7 +33,8 @@ fn get_commits(path: &PathBuf) -> Vec<String> {
 
 fn checkout_commit(hash: &str, path: &PathBuf) {
     let _ = Command::new("git")
-        .arg("checkout")
+        .arg("switch")
+        .arg("--detach")
         .current_dir(path)
         .arg(hash)
         .status()
@@ -70,7 +71,8 @@ fn bisect(path: &PathBuf, range: Vec<String>, command: &str) -> String {
     let mut right = range.len() - 1;
     let mut pivot = 0;
     while left < right {
-        pivot = left + right / 2;
+        println!("{} - {} - {}", pivot, left, right);
+        pivot = (left + right) / 2;
         if check_commit(path, &range[pivot], command) {
             right = pivot - 1;
         } else if !check_commit(path, &range[pivot], command) {
@@ -90,9 +92,10 @@ fn main() {
         Ok(path) => {
             let path = path.canonicalize().unwrap();
             let full_vec = get_commits(&path);
-            let range = get_commit_range(full_vec, &args[2], &args[3]);
+            let range = get_commit_range(full_vec.clone(), &args[2], &args[3]);
             println!("{:?}", range);
-            println!("{}", bisect(&path, range, &args[4]))
+            println!("{}", bisect(&path, range, &args[4]));
+            checkout_commit(&full_vec[0], &path);
         }
     }
 }
