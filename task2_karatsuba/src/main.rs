@@ -1,4 +1,4 @@
-use std::{cmp, io};
+use std::{cmp, io, ops::Add};
 
 #[derive(Debug, Clone)]
 struct Numbers {
@@ -89,14 +89,72 @@ fn karatsuba_impl(mut numbers: Numbers) -> i128 {
     (ac * tenpower(size) + bd + fourth_step * tenpower(size / 2)) / diff
 }
 
+#[derive(Debug)]
+struct VecWrap {
+    vector: Vec<u8>,
+}
+
+impl VecWrap {
+    fn into_wrap(vector: Vec<u8>) -> Self {
+        VecWrap { vector }
+    }
+    fn new() -> Self {
+        VecWrap { vector: Vec::new() }
+    }
+}
+
+impl Add<VecWrap> for VecWrap {
+    type Output = VecWrap;
+    fn add(self, b: VecWrap) -> VecWrap {
+        let a = self.vector;
+        let b = b.vector;
+        let mut surplus = 0;
+        let mut c: Vec<u8> = Vec::new();
+        for (i, val_a) in a.iter().rev().enumerate() {
+            let mut val_b = 0;
+            let b_size = b.len() as i32;
+            if b_size - (i as i32) > 0 {
+                val_b = b[b.len() - i - 1] - 48;
+            }
+            let val_a = val_a - 48;
+            let mut val_res = val_a + val_b + surplus;
+            surplus = 0;
+            if val_res > 10 {
+                surplus = val_res / 10;
+                val_res = val_res % 10;
+            }
+            c.push(val_res + 48);
+        }
+        if b.len() > a.len() {
+            let d = &b[0..b.len() - a.len()];
+            for val in d.iter().rev() {
+                let mut res = val - 48 + surplus;
+                surplus = 0;
+                if res > 10 {
+                    surplus = res / 10;
+                    res = res % 10;
+                }
+                c.push(res + 48);
+            }
+        }
+        if surplus != 0 {
+            c.push(surplus + 48);
+        }
+        c.reverse();
+        VecWrap::into_wrap(c)
+    }
+}
+
 fn main() {
     let mut first = String::new();
     let mut second = String::new();
     let _ = io::stdin().read_line(&mut first).unwrap();
     let _ = io::stdin().read_line(&mut second).unwrap();
-    let first = first.trim().parse::<i128>().unwrap();
-    let second = second.trim().parse::<i128>().unwrap();
-    println!("result = {}", karatsuba(first, second));
+    // let first = first.trim().parse::<i128>().unwrap();
+    // let second = second.trim().parse::<i128>().unwrap();
+    let first = VecWrap::into_wrap(first.trim().to_string().into_bytes());
+    let second = VecWrap::into_wrap(second.trim().to_string().into_bytes());
+    println!("result = {:?}", u8_to_i128(&(first + second).vector));
 }
 
 #[cfg(test)]
