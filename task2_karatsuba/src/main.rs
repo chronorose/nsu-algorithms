@@ -81,9 +81,9 @@ fn karatsuba_impl(mut numbers: Numbers) -> i128 {
     let (a, c) = ac_arr.into_i128();
     let abcd_arr = Numbers::new(a + b, c + d);
 
-    let ac = karatsuba_impl(ac_arr.clone());
-    let bd = karatsuba_impl(bd_arr.clone());
-    let abcd = karatsuba_impl(abcd_arr.clone());
+    let ac = karatsuba_impl(ac_arr);
+    let bd = karatsuba_impl(bd_arr);
+    let abcd = karatsuba_impl(abcd_arr);
     let fourth_step = abcd - bd - ac;
 
     (ac * tenpower(size) + bd + fourth_step * tenpower(size / 2)) / diff
