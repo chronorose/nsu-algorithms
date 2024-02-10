@@ -1,4 +1,7 @@
-use std::{cmp, io, ops::Add};
+use std::{
+    cmp, io,
+    ops::{Add, Mul, Sub},
+};
 
 #[derive(Debug, Clone)]
 struct Numbers {
@@ -44,6 +47,10 @@ impl Numbers {
         Numbers { first, second }
     }
 
+    fn create(first: Vec<u8>, second: Vec<u8>) -> Self {
+        Numbers { first, second }
+    }
+
     fn split_in_two(&mut self) -> Numbers {
         let first = self.first.split_off(self.first.len() / 2);
         let second = self.second.split_off(self.second.len() / 2);
@@ -76,10 +83,13 @@ fn karatsuba_impl(mut numbers: Numbers) -> i128 {
 
     let bd_arr = numbers.split_in_two();
     let ac_arr = numbers;
-
-    let (b, d) = bd_arr.into_i128();
-    let (a, c) = ac_arr.into_i128();
-    let abcd_arr = Numbers::new(a + b, c + d);
+    let b = BigInt::into_big_int(bd_arr.first.clone());
+    let d = BigInt::into_big_int(bd_arr.second.clone());
+    let a = BigInt::into_big_int(ac_arr.first.clone());
+    let c = BigInt::into_big_int(ac_arr.second.clone());
+    // let (b, d) = bd_arr.into_i128();
+    // let (a, c) = ac_arr.into_i128();
+    let abcd_arr = Numbers::create((a + b).vector, (c + d).vector);
 
     let ac = karatsuba_impl(ac_arr);
     let bd = karatsuba_impl(bd_arr);
@@ -90,22 +100,53 @@ fn karatsuba_impl(mut numbers: Numbers) -> i128 {
 }
 
 #[derive(Debug)]
-struct VecWrap {
+struct BigInt {
     vector: Vec<u8>,
 }
 
-impl VecWrap {
-    fn into_wrap(vector: Vec<u8>) -> Self {
-        VecWrap { vector }
+impl BigInt {
+    fn into_big_int(vector: Vec<u8>) -> Self {
+        BigInt { vector }
     }
     fn new() -> Self {
-        VecWrap { vector: Vec::new() }
+        BigInt { vector: Vec::new() }
+    }
+    fn zero() -> Self {
+        BigInt { vector: vec![48] }
     }
 }
 
-impl Add<VecWrap> for VecWrap {
-    type Output = VecWrap;
-    fn add(self, b: VecWrap) -> VecWrap {
+impl Mul<BigInt> for BigInt {
+    type Output = BigInt;
+    fn mul(self, b: BigInt) -> Self::Output {
+        let a = self.vector;
+        let b = b.vector;
+        let mut c = BigInt::zero();
+        let mut surplus = 0;
+        for (i, val_b) in b.iter().rev().enumerate() {
+            let mut sub_res = BigInt::new();
+            for _ in 0..i {
+                sub_res.vector.push(48);
+            }
+            for val_a in a.iter().rev() {
+                let mut val_res = (val_a - 48) * (val_b - 48) + surplus;
+                surplus = 0;
+                if val_res > 10 {
+                    surplus = val_res / 10;
+                    val_res = val_res % 10;
+                }
+                sub_res.vector.push(val_res + 48);
+            }
+            sub_res.vector.reverse();
+            c = c + sub_res;
+        }
+        c
+    }
+}
+
+impl Add<BigInt> for BigInt {
+    type Output = BigInt;
+    fn add(self, b: BigInt) -> Self::Output {
         let a = self.vector;
         let b = b.vector;
         let mut surplus = 0;
@@ -141,7 +182,15 @@ impl Add<VecWrap> for VecWrap {
             c.push(surplus + 48);
         }
         c.reverse();
-        VecWrap::into_wrap(c)
+        BigInt::into_big_int(c)
+    }
+}
+
+impl Sub<BigInt> for BigInt {
+    type Output = BigInt;
+    fn sub(self, b: BigInt) -> Self::Output {
+        let a = self.vector;
+        let b = b.vector;
     }
 }
 
@@ -152,9 +201,9 @@ fn main() {
     let _ = io::stdin().read_line(&mut second).unwrap();
     // let first = first.trim().parse::<i128>().unwrap();
     // let second = second.trim().parse::<i128>().unwrap();
-    let first = VecWrap::into_wrap(first.trim().to_string().into_bytes());
-    let second = VecWrap::into_wrap(second.trim().to_string().into_bytes());
-    println!("result = {:?}", u8_to_i128(&(first + second).vector));
+    let first = BigInt::into_big_int(first.trim().to_string().into_bytes());
+    let second = BigInt::into_big_int(second.trim().to_string().into_bytes());
+    println!("result = {:?}", u8_to_i128(&(first * second).vector));
 }
 
 #[cfg(test)]
