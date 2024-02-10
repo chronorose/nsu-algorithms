@@ -1,7 +1,10 @@
+#![allow(dead_code)]
 use std::{
     cmp, io,
     ops::{Add, Mul, Sub},
 };
+
+// TODO: delete numbers struct, redo karatsuba around BigInt since i've got all functions that I need. Do deletion.
 
 #[derive(Debug, Clone)]
 struct Numbers {
@@ -102,17 +105,61 @@ fn karatsuba_impl(mut numbers: Numbers) -> i128 {
 #[derive(Debug)]
 struct BigInt {
     vector: Vec<u8>,
+    sign: bool,
 }
 
 impl BigInt {
     fn into_big_int(vector: Vec<u8>) -> Self {
-        BigInt { vector }
+        BigInt {
+            vector,
+            sign: false,
+        }
     }
     fn new() -> Self {
-        BigInt { vector: Vec::new() }
+        BigInt {
+            vector: Vec::new(),
+            sign: false,
+        }
+    }
+    fn pow(&mut self, power: usize) {
+        for _ in 0..power {
+            self.vector.push(48);
+        }
     }
     fn zero() -> Self {
-        BigInt { vector: vec![48] }
+        BigInt {
+            vector: vec![48],
+            sign: false,
+        }
+    }
+    fn more(self, other: BigInt) -> bool {
+        let first = self.vector;
+        let other = other.vector;
+        if first.len() > other.len() {
+            true
+        } else if other.len() > first.len() {
+            false
+        } else {
+            let mut ret = false;
+            for (i, val) in first.iter().enumerate() {
+                if *val > other[i] {
+                    ret = true;
+                    break;
+                } else if *val < other[i] {
+                    break;
+                }
+            }
+            ret
+        }
+    }
+}
+
+fn trim_right(vector: &mut Vec<u8>) {
+    for i in vector.len()..=0 {
+        if vector[i] != 48 {
+            break;
+        }
+        vector.pop();
     }
 }
 
@@ -148,14 +195,14 @@ impl Add<BigInt> for BigInt {
     type Output = BigInt;
     fn add(self, b: BigInt) -> Self::Output {
         let a = self.vector;
-        let b = b.vector;
+        let mut b = b.vector;
+        b.reverse();
         let mut surplus = 0;
         let mut c: Vec<u8> = Vec::new();
         for (i, val_a) in a.iter().rev().enumerate() {
             let mut val_b = 0;
-            let b_size = b.len() as i32;
-            if b_size - (i as i32) > 0 {
-                val_b = b[b.len() - i - 1] - 48;
+            if b.len() > i {
+                val_b = b[i] - 48;
             }
             let val_a = val_a - 48;
             let mut val_res = val_a + val_b + surplus;
@@ -189,8 +236,40 @@ impl Add<BigInt> for BigInt {
 impl Sub<BigInt> for BigInt {
     type Output = BigInt;
     fn sub(self, b: BigInt) -> Self::Output {
-        let a = self.vector;
-        let b = b.vector;
+        let mut a = self.vector.clone();
+        a.reverse();
+        let b = b.vector.clone();
+        let mut c: Vec<u8> = Vec::new();
+        let mut endpoint = 0;
+        for (i, val_b) in b.iter().rev().enumerate() {
+            endpoint = i + 1;
+            let val_a = a[i];
+            let val_res = if *val_b > val_a && i < a.len() {
+                let mut j = i + 1;
+                while j < a.len() && a[j] == 48 {
+                    j += 1;
+                }
+                a[j] -= 1;
+                j -= 1;
+                while j > i {
+                    a[j] = 9;
+                    j -= 1;
+                }
+                println!("a = {} b = {}", val_a, val_b);
+                println!("arr a = {:?}", a);
+                (val_a - 48 + 10) - (val_b - 48)
+            } else {
+                (val_a - 48) - (val_b - 48)
+            };
+            c.push(val_res + 48);
+        }
+        while endpoint < a.len() {
+            c.push(a[endpoint]);
+            endpoint += 1;
+        }
+        trim_right(&mut c);
+        c.reverse();
+        BigInt::into_big_int(c)
     }
 }
 
@@ -201,9 +280,13 @@ fn main() {
     let _ = io::stdin().read_line(&mut second).unwrap();
     // let first = first.trim().parse::<i128>().unwrap();
     // let second = second.trim().parse::<i128>().unwrap();
-    let first = BigInt::into_big_int(first.trim().to_string().into_bytes());
+    let first1 = BigInt::into_big_int(first.clone().trim().to_string().into_bytes());
     let second = BigInt::into_big_int(second.trim().to_string().into_bytes());
-    println!("result = {:?}", u8_to_i128(&(first * second).vector));
+    println!(
+        "input1 = {:?} result = {}",
+        first.trim().to_string().into_bytes(),
+        u8_to_i128(&(first1 - second).vector)
+    );
 }
 
 #[cfg(test)]
