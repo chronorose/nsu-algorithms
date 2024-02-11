@@ -14,11 +14,7 @@ fn zero_last_places(vector: &mut Vec<u8>, new_size: usize) -> i32 {
     amount
 }
 
-fn karatsuba(arg1: BigInt, arg2: BigInt) -> BigInt {
-    karatsuba_impl(arg1, arg2)
-}
-
-fn karatsuba_impl(mut first: BigInt, mut second: BigInt) -> BigInt {
+fn karatsuba(mut first: BigInt, mut second: BigInt) -> BigInt {
     if first.vector.len() < 2 || second.vector.len() < 2 {
         return first * second;
     }
@@ -32,15 +28,69 @@ fn karatsuba_impl(mut first: BigInt, mut second: BigInt) -> BigInt {
 
     let ab = a.clone() + b.clone();
     let cd = c.clone() + d.clone();
-    let mut ac = karatsuba_impl(a, c);
-    let bd = karatsuba_impl(b, d);
-    let abcd = karatsuba_impl(ab, cd);
+    let mut ac = karatsuba(a, c);
+    let bd = karatsuba(b, d);
+    let abcd = karatsuba(ab, cd);
     let mut fourth_step = abcd - bd.clone() - ac.clone();
     let mut last_step = ac.pow(size) + bd.clone() + fourth_step.pow(size / 2);
     for _ in 0..diff {
         last_step.vector.pop();
     }
     last_step
+}
+
+impl Div<BigInt> for BigInt {
+    type Output = BigInt;
+    fn div(self, b: BigInt) -> Self::Output {
+        if b.vector == BigInt::zero().vector {
+            return BigInt::zero();
+        }
+        let mut c: Vec<u8> = Vec::new();
+        let mut i = 0;
+        let mut start = 0;
+        let mut rest = BigInt::zero();
+        let mut rest_place = 0;
+        while i < self.vector.len() {
+            let mut a_big = BigInt::into_big_ref(&self.vector[start..=i].to_vec())
+                + rest.clone().pow(i - rest_place);
+            while i < self.vector.len() - 1 && b.more(&a_big) {
+                i += 1;
+                a_big = BigInt::into_big_ref(&self.vector[start..=i].to_vec())
+                    + rest.clone().pow(i - rest_place);
+                c.push(48);
+            }
+            rest = BigInt::zero();
+            if a_big.more(&b) {
+                let mut j = 1;
+                let mut check;
+                let mut check_not_done = true;
+                while j < 10 {
+                    j += 1;
+                    check = b.clone() * BigInt::from_u8(j);
+                    if check.more(&a_big) {
+                        j -= 1;
+                        c.push(j + 48);
+                        check_not_done = false;
+                        break;
+                    }
+                }
+                if check_not_done {
+                    c.push(48);
+                } else {
+                    rest = a_big.clone() - (b.clone() * BigInt::from_u8(j));
+                    rest_place = i;
+                }
+            } else {
+                c.push(48);
+            }
+            i += 1;
+            start = i;
+        }
+        c.reverse();
+        trim_right(&mut c);
+        c.reverse();
+        BigInt::into_big_int(c)
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -298,60 +348,6 @@ impl Sub<BigInt> for BigInt {
             c.push(a[endpoint]);
             endpoint += 1;
         }
-        trim_right(&mut c);
-        c.reverse();
-        BigInt::into_big_int(c)
-    }
-}
-
-impl Div<BigInt> for BigInt {
-    type Output = BigInt;
-    fn div(self, b: BigInt) -> Self::Output {
-        if b.vector == BigInt::zero().vector {
-            return BigInt::zero();
-        }
-        let mut c: Vec<u8> = Vec::new();
-        let mut i = 0;
-        let mut start = 0;
-        let mut rest = BigInt::zero();
-        let mut rest_place = 0;
-        while i < self.vector.len() {
-            let mut a_big = BigInt::into_big_ref(&self.vector[start..=i].to_vec())
-                + rest.clone().pow(i - rest_place);
-            while i < self.vector.len() - 1 && b.more(&a_big) {
-                i += 1;
-                a_big = BigInt::into_big_ref(&self.vector[start..=i].to_vec())
-                    + rest.clone().pow(i - rest_place);
-                c.push(48);
-            }
-            rest = BigInt::zero();
-            if a_big.more(&b) {
-                let mut j = 1;
-                let mut check;
-                let mut check_not_done = true;
-                while j < 10 {
-                    j += 1;
-                    check = b.clone() * BigInt::from_u8(j);
-                    if check.more(&a_big) {
-                        j -= 1;
-                        c.push(j + 48);
-                        check_not_done = false;
-                        break;
-                    }
-                }
-                if check_not_done {
-                    c.push(48);
-                } else {
-                    rest = a_big.clone() - (b.clone() * BigInt::from_u8(j));
-                    rest_place = i;
-                }
-            } else {
-                c.push(48);
-            }
-            i += 1;
-            start = i;
-        }
-        c.reverse();
         trim_right(&mut c);
         c.reverse();
         BigInt::into_big_int(c)
