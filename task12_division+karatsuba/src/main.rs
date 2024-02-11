@@ -1,7 +1,9 @@
 #![allow(dead_code)]
 use core::fmt;
 use std::{
-    cmp, io,
+    cmp,
+    collections::VecDeque,
+    io,
     ops::{Add, Div, Mul, Sub},
 };
 
@@ -45,7 +47,7 @@ impl Div<BigInt> for BigInt {
         if b.vector == BigInt::zero().vector {
             return BigInt::zero();
         }
-        let mut c: Vec<u8> = Vec::new();
+        let mut c: VecDeque<u8> = VecDeque::new();
         let mut i = 0;
         let mut start = 0;
         let mut rest = BigInt::zero();
@@ -57,7 +59,7 @@ impl Div<BigInt> for BigInt {
                 i += 1;
                 a_big = BigInt::into_big_ref(&self.vector[start..=i].to_vec())
                     + rest.clone().pow(i - rest_place);
-                c.push(48);
+                c.push_back(48);
             }
             rest = BigInt::zero();
             if a_big.more(&b) {
@@ -69,27 +71,33 @@ impl Div<BigInt> for BigInt {
                     check = b.clone() * BigInt::from_u8(j);
                     if check.more(&a_big) {
                         j -= 1;
-                        c.push(j + 48);
+                        c.push_back(j + 48);
                         check_not_done = false;
                         break;
                     }
                 }
                 if check_not_done {
-                    c.push(48);
+                    c.push_back(48);
                 } else {
                     rest = a_big.clone() - (b.clone() * BigInt::from_u8(j));
                     rest_place = i;
                 }
             } else {
-                c.push(48);
+                c.push_back(48);
             }
             i += 1;
             start = i;
         }
-        c.reverse();
-        trim_right(&mut c);
-        c.reverse();
-        BigInt::into_big_int(c)
+        let mut i = 0;
+        while i < c.len() {
+            if c[i] == 48 {
+                c.pop_front();
+            } else {
+                break;
+            }
+            i += 1;
+        }
+        BigInt::into_big_int(vecdeque_to_vec(c))
     }
 }
 
@@ -223,6 +231,14 @@ fn trim_right(vector: &mut Vec<u8>) {
     }
 }
 
+fn vecdeque_to_vec(deque: VecDeque<u8>) -> Vec<u8> {
+    let mut new_vec = Vec::new();
+    for i in deque {
+        new_vec.push(i);
+    }
+    new_vec
+}
+
 impl fmt::Display for BigInt {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut str = String::new();
@@ -248,12 +264,9 @@ impl Mul<BigInt> for BigInt {
             }
             for (j, val_a) in a.iter().rev().enumerate() {
                 let mut val_res = (val_a - 48) * (val_b - 48) + surplus;
-                surplus = 0;
                 endpoint = j;
-                if val_res >= 10 {
-                    surplus = val_res / 10;
-                    val_res = val_res % 10;
-                }
+                surplus = val_res / 10;
+                val_res = val_res % 10;
                 sub_res.vector.push(val_res + 48);
             }
             sub_res.vector.reverse();
@@ -289,28 +302,20 @@ impl Add<BigInt> for BigInt {
             }
             let val_a = val_a - 48;
             let mut val_res = val_a + val_b + surplus;
-            surplus = 0;
-            if val_res >= 10 {
-                surplus = val_res / 10;
-                val_res = val_res % 10;
-            }
+            surplus = val_res / 10;
+            val_res = val_res % 10;
             c.push(val_res + 48);
         }
         if b.len() > a.len() {
             let d = &b[a.len()..b.len()];
             for val in d.iter() {
                 let mut res = val - 48 + surplus;
-                surplus = 0;
-                if res > 10 {
-                    surplus = res / 10;
-                    res = res % 10;
-                }
+                surplus = res / 10;
+                res = res % 10;
                 c.push(res + 48);
             }
         }
-        if surplus != 0 {
-            c.push(surplus + 48);
-        }
+        c.push(surplus + 48);
         c.reverse();
         BigInt::into_big_int(c)
     }
