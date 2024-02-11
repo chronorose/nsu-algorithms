@@ -2,7 +2,7 @@
 use core::fmt;
 use std::{
     cmp, io,
-    ops::{Add, Mul, Sub},
+    ops::{Add, Div, Mul, Sub},
 };
 
 fn zero_last_places(vector: &mut Vec<u8>, new_size: usize) -> i32 {
@@ -56,8 +56,26 @@ impl BigInt {
         }
         new
     }
+    fn from_u8(number: u8) -> Self {
+        BigInt::from_str(&number.to_string())
+    }
     fn into_big_int(vector: Vec<u8>) -> Self {
         let big_int = BigInt { vector };
+        match big_int.check_correctness() {
+            Ok(sl) => sl,
+            Err(err) => {
+                println!("{}", err);
+                BigInt::zero()
+            }
+        }
+    }
+    fn into_big_no_check(vector: Vec<u8>) -> Self {
+        BigInt { vector }
+    }
+    fn into_big_ref(vector: &Vec<u8>) -> Self {
+        let big_int = BigInt {
+            vector: vector.to_vec(),
+        };
         match big_int.check_correctness() {
             Ok(sl) => sl,
             Err(err) => {
@@ -122,9 +140,9 @@ impl BigInt {
     fn zero() -> Self {
         BigInt { vector: vec![48] }
     }
-    fn more(self, other: BigInt) -> bool {
-        let first = self.vector;
-        let other = other.vector;
+    fn more(&self, other: &BigInt) -> bool {
+        let first = self.vector.clone();
+        let other = other.vector.clone();
         if first.len() > other.len() {
             true
         } else if other.len() > first.len() {
@@ -172,22 +190,19 @@ impl Mul<BigInt> for BigInt {
         let b = b.vector;
         let mut c = BigInt::zero();
         let mut surplus = 0;
-        let mut endpoint = false;
+        let mut endpoint = 0;
         for (i, val_b) in b.iter().rev().enumerate() {
             let mut sub_res = BigInt::new();
             for _ in 0..i {
                 sub_res.vector.push(48);
             }
-            for val_a in a.iter().rev() {
+            for (j, val_a) in a.iter().rev().enumerate() {
                 let mut val_res = (val_a - 48) * (val_b - 48) + surplus;
                 surplus = 0;
-                endpoint = false;
+                endpoint = j;
                 if val_res >= 10 {
                     surplus = val_res / 10;
                     val_res = val_res % 10;
-                    if val_res == 0 {
-                        endpoint = true;
-                    }
                 }
                 sub_res.vector.push(val_res + 48);
             }
@@ -197,12 +212,7 @@ impl Mul<BigInt> for BigInt {
         if surplus != 0 {
             let mut surplus_vec = Vec::new();
             let mut i = 0;
-            let size = if endpoint {
-                c.vector.len() + 1
-            } else {
-                c.vector.len()
-            };
-            while i < size {
+            while i <= endpoint {
                 surplus_vec.push(48);
                 i += 1;
             }
@@ -294,6 +304,60 @@ impl Sub<BigInt> for BigInt {
     }
 }
 
+impl Div<BigInt> for BigInt {
+    type Output = BigInt;
+    fn div(self, b: BigInt) -> Self::Output {
+        if b.vector == BigInt::zero().vector {
+            return BigInt::zero();
+        }
+        let mut c: Vec<u8> = Vec::new();
+        let mut i = 0;
+        let mut start = 0;
+        let mut rest = BigInt::zero();
+        let mut rest_place = 0;
+        while i < self.vector.len() {
+            let mut a_big = BigInt::into_big_ref(&self.vector[start..=i].to_vec())
+                + rest.clone().pow(i - rest_place);
+            while i < self.vector.len() - 1 && b.more(&a_big) {
+                i += 1;
+                a_big = BigInt::into_big_ref(&self.vector[start..=i].to_vec())
+                    + rest.clone().pow(i - rest_place);
+                c.push(48);
+            }
+            rest = BigInt::zero();
+            if a_big.more(&b) {
+                let mut j = 1;
+                let mut check;
+                let mut check_not_done = true;
+                while j < 10 {
+                    j += 1;
+                    check = b.clone() * BigInt::from_u8(j);
+                    if check.more(&a_big) {
+                        j -= 1;
+                        c.push(j + 48);
+                        check_not_done = false;
+                        break;
+                    }
+                }
+                if check_not_done {
+                    c.push(48);
+                } else {
+                    rest = a_big.clone() - (b.clone() * BigInt::from_u8(j));
+                    rest_place = i;
+                }
+            } else {
+                c.push(48);
+            }
+            i += 1;
+            start = i;
+        }
+        c.reverse();
+        trim_right(&mut c);
+        c.reverse();
+        BigInt::into_big_int(c)
+    }
+}
+
 fn main() {
     let mut first = String::new();
     let mut second = String::new();
@@ -301,7 +365,11 @@ fn main() {
     let _ = io::stdin().read_line(&mut second).unwrap();
     let first1 = BigInt::into_big_int(first.clone().trim().to_string().into_bytes());
     let second = BigInt::into_big_int(second.trim().to_string().into_bytes());
-    println!("result = {}", karatsuba(first1, second));
+    println!("result = {}", first1 / second);
+    // println!(
+    //     "result = {}",
+    //     BigInt::from_str("1440") / BigInt::from_str("7")
+    // );
 }
 
 #[cfg(test)]
