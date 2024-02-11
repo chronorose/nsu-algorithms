@@ -1,0 +1,7 @@
+ac * diff + bd + (abcd - bd - ac) * diff / 2;
+330
+2
+
+ac = 6;
+bd = 0;
+acbd = 33 * 2;
