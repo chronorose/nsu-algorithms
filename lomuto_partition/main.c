@@ -176,4 +176,7 @@ int main() {
   printf("Lomuto branch free:\nSample mean: %f\nGeometric mean: %f\n", brfreesamplemean, brfreegeommean);
   printf("Lomuto naive:\nSample mean: %f\nGeometric mean: %f\n", brbusysamplemean, brbusygeommean);
   printf("Hoare:\nSample mean: %f\nGeometric mean: %f\n", hoaresamplemean, hoaregeommean);
+  free(branchFree);
+  free(branchBusy);
+  free(hoare);
 }
