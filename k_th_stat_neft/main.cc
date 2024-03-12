@@ -66,5 +66,7 @@ void tests() {
 }
 
 int main() {
+    vector<int> vec = {1, 3, 6, 7};
+    cout << kth(vec, 3);
     tests();
 }
