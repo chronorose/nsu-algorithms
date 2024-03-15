@@ -37,12 +37,18 @@ class BHeap {
         fnode->degree++;
         return fnode;
     }
+    // mergeNodes fheap, sheap
+    // 9 8 7 6
+    // heap - 9
+    // heap - 8 -> 9
+    // heap - 7; 8->9
+    // fheap: 7; 8->9; sheap: 6
     Node* mergeHeaps(Node* fheap, Node* sheap) {
         if (fheap == nullptr) return sheap;
         if (sheap == nullptr) return fheap;
         Node* carry = nullptr;
-        Node* rheap = nullptr;
-        Node* rheap_root = nullptr;
+        Node* rheap = new Node(0);
+        Node* rheap_root = rheap;
         while (fheap != nullptr && sheap != nullptr) {
             if (fheap->degree == sheap->degree && carry != nullptr && fheap->degree == carry->degree) {
                 rheap->right = carry;
@@ -51,9 +57,11 @@ class BHeap {
                 fheap = fheap->right;
                 sheap = sheap->right;
             } else if (fheap->degree == sheap->degree) {
+                Node* fholder = fheap->right;
+                Node* sholder = sheap->right;
                 carry = mergeNodes(fheap, sheap);
-                fheap = fheap->right;
-                sheap = sheap->right;
+                fheap = fholder;
+                sheap = sholder;
             } else if (carry != nullptr) {
                 if (carry->degree == fheap->degree) {
                     carry = mergeNodes(carry, fheap);
@@ -62,48 +70,32 @@ class BHeap {
                     carry = mergeNodes(carry, sheap);
                     sheap = sheap->right;
                 } else {
-                    if (rheap == nullptr) {
-                        rheap = carry;
-                        rheap_root = rheap;
-                    } else {
-                        rheap->right = carry;
-                        rheap = rheap->right;
-                    }
+                    rheap->right = carry;
+                    rheap = rheap->right;
                 }
             } else if (fheap->degree < sheap->degree) {
-                    if (rheap == nullptr) {
-                    rheap = fheap;
-                    rheap_root = rheap;
-                } else {
-                    rheap->right = fheap;
-                    rheap = rheap->right;
-                }
+                rheap->right = fheap;
+                rheap = rheap->right;
                 fheap = fheap->right;
             } else {
-                if (rheap == nullptr) {
-                    rheap = sheap;
-                    rheap_root = rheap;
-                } else {
-                    rheap->right = sheap;
-                    rheap = rheap->right;
-                }
+                rheap->right = sheap;
+                rheap = rheap->right;
                 sheap = sheap->right;
             }
         }
-
+            displayChildren(carry);
+            cout << endl;
+        // displayChildren(rheap_root);
+        // cout << endl;
         while (fheap != nullptr) {
             if (carry != nullptr) {
                 if (carry->degree == fheap->degree) {
+                    Node* fholder = fheap->right;
                     carry = mergeNodes(carry, fheap);
-                    fheap = fheap->right;
+                    fheap = fholder;
                 } else {
-                    if (rheap == nullptr) {
-                        rheap = carry;
-                        rheap_root = rheap;
-                    } else {
-                        rheap->right = carry;
-                        rheap = rheap->right;
-                    }
+                    rheap->right = carry;
+                    rheap = rheap->right;
                     carry = nullptr;
                 }
             } else {
@@ -119,13 +111,8 @@ class BHeap {
                     carry = mergeNodes(carry, sheap);
                     sheap = sheap->right;
                 } else {
-                    if (rheap == nullptr) {
-                        rheap = carry;
-                        rheap_root = rheap;
-                    } else {
-                        rheap->right = carry;
-                        rheap = rheap->right;
-                    }
+                    rheap->right = carry;
+                    rheap = rheap->right;
                     carry = nullptr;
                 }
             } else {
@@ -136,12 +123,11 @@ class BHeap {
         }
 
         if (carry != nullptr) {
-            if (rheap == nullptr) {
-                rheap = carry;
-                rheap_root = rheap;
-            }
-            else rheap->right = carry;
+            rheap->right = carry;
         }
+        rheap = rheap_root;
+        rheap_root = rheap->right;
+        delete rheap;
         return rheap_root;
     }
     void deleteAll(Node* node) {
@@ -149,9 +135,10 @@ class BHeap {
             deleteAll(node->child);
             Node* tmp = node;
             node = node->right;
-            delete node;
+            delete tmp;
         }
     }
+    public:
     BHeap(): heap(nullptr) {}
     void insert(int val) {
         Node* new_node = new Node(val);
@@ -171,14 +158,27 @@ class BHeap {
             tmp = tmp->right;
         }
     }
-    // ~BHeap() {
-    //     deleteAll(heap);
-    // }
+
+    int peek_min() {
+        // костыль потому что optional в плюсах очень неудобный
+        if (heap == nullptr) return 0;
+        Node* tmp = heap;
+        int min = tmp->val;
+        while (tmp != nullptr) {
+            if (tmp->val < min) min = tmp->val;    
+            tmp = tmp->right;
+        }
+        return min;
+    }
+    
+    ~BHeap() {
+        deleteAll(heap);
+    }
 };
 
 void tests() {
     BHeap bh;
-    for(size_t i = 1; i < 9; i++) {
+    for(size_t i = 9; i > 5; i--) {
         bh.insert(i);
     }
     bh.display();
