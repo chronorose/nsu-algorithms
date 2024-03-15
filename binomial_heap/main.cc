@@ -1,5 +1,6 @@
 #include <vector>
 #include <iostream>
+#include <optional>
 
 using namespace std;
 
@@ -37,12 +38,6 @@ class BHeap {
         fnode->degree++;
         return fnode;
     }
-    // mergeNodes fheap, sheap
-    // 9 8 7 6
-    // heap - 9
-    // heap - 8 -> 9
-    // heap - 7; 8->9
-    // fheap: 7; 8->9; sheap: 6
     Node* mergeHeaps(Node* fheap, Node* sheap) {
         if (fheap == nullptr) return sheap;
         if (sheap == nullptr) return fheap;
@@ -52,10 +47,12 @@ class BHeap {
         while (fheap != nullptr && sheap != nullptr) {
             if (fheap->degree == sheap->degree && carry != nullptr && fheap->degree == carry->degree) {
                 rheap->right = carry;
+                Node* fholder = fheap->right;
+                Node* sholder = sheap->right;
                 carry = mergeNodes(fheap, sheap);
                 rheap = rheap->right;
-                fheap = fheap->right;
-                sheap = sheap->right;
+                fheap = fholder;
+                sheap = sholder;
             } else if (fheap->degree == sheap->degree) {
                 Node* fholder = fheap->right;
                 Node* sholder = sheap->right;
@@ -64,11 +61,13 @@ class BHeap {
                 sheap = sholder;
             } else if (carry != nullptr) {
                 if (carry->degree == fheap->degree) {
+                    Node* fholder = fheap->right;
                     carry = mergeNodes(carry, fheap);
-                    fheap = fheap->right;
+                    fheap = fholder;
                 } else if (carry->degree == sheap->degree) {
+                    Node* sholder = sheap->right;
                     carry = mergeNodes(carry, sheap);
-                    sheap = sheap->right;
+                    sheap = sholder;
                 } else {
                     rheap->right = carry;
                     rheap = rheap->right;
@@ -83,10 +82,6 @@ class BHeap {
                 sheap = sheap->right;
             }
         }
-            displayChildren(carry);
-            cout << endl;
-        // displayChildren(rheap_root);
-        // cout << endl;
         while (fheap != nullptr) {
             if (carry != nullptr) {
                 if (carry->degree == fheap->degree) {
@@ -108,8 +103,9 @@ class BHeap {
         while (sheap != nullptr) {
             if (carry != nullptr) {
                 if (carry->degree == sheap->degree) {
+                    Node* sholder = sheap->right;
                     carry = mergeNodes(carry, sheap);
-                    sheap = sheap->right;
+                    sheap = sholder;
                 } else {
                     rheap->right = carry;
                     rheap = rheap->right;
@@ -138,6 +134,40 @@ class BHeap {
             delete tmp;
         }
     }
+    Node* findLeftSibling(Node* node) {
+        if (node == nullptr) return nullptr;
+        if (node->parent == nullptr) return nullptr;
+        if (node->parent->child == node) return nullptr;
+        Node* child = node->parent->child;
+        while(child->right != node) {
+            child = child->right;
+        }
+        return child;
+    }
+    // we need to find siblings. also swap things around.
+    // holy shit its disgusting lmao :)
+    void goUp(Node* node) {
+        if (node == nullptr) return;
+        if (node->parent == nullptr) return;
+        if (node->val < node->parent->val) {
+            Node* parent = node->parent;
+            int degree = node->parent->degree;
+            Node* node_right = node->right;
+            Node* tmp = node;
+            Node* parent_sibling = findLeftSibling(parent);
+            Node* node_sibling = findLeftSibling(node);
+            parent->degree = node->degree;
+            node->degree = degree;
+            node->parent = parent->parent;
+            node->child = parent->child;
+            if (parent_sibling != nullptr) 
+                parent_sibling->right = node;
+            node->right = parent->right;
+            if (parent->parent != nullptr && parent->parent->child == parent) {
+                parent->parent->child = node;
+            }
+        }
+    }
     public:
     BHeap(): heap(nullptr) {}
     void insert(int val) {
@@ -159,9 +189,8 @@ class BHeap {
         }
     }
 
-    int peek_min() {
-        // костыль потому что optional в плюсах очень неудобный
-        if (heap == nullptr) return 0;
+    optional<int> peek_min() {
+        if (heap == nullptr) return {};
         Node* tmp = heap;
         int min = tmp->val;
         while (tmp != nullptr) {
@@ -175,11 +204,19 @@ class BHeap {
         deleteAll(heap);
     }
 };
-
+// TODO: fix bug with two same values
+// 4 of the same values in a row break everything :)
 void tests() {
     BHeap bh;
-    for(size_t i = 9; i > 5; i--) {
+    for(size_t i = 9; i > 6; i--) {
         bh.insert(i);
+    }
+    // bh.insert(10);
+    // bh.insert(10);
+    // bh.insert(10);
+    // bh.insert(10);
+    if (auto minim = bh.peek_min()) {
+        cout << *minim << endl;
     }
     bh.display();
 }
