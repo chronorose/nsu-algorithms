@@ -134,45 +134,21 @@ class BHeap {
             delete tmp;
         }
     }
-    Node* findLeftSibling(Node* node) {
-        if (node == nullptr) return nullptr;
-        if (node->parent == nullptr) return nullptr;
-        if (node->parent->child == node) return nullptr;
-        Node* child = node->parent->child;
-        while(child->right != node) {
-            child = child->right;
-        }
-        return child;
-    }
-    // we need to find siblings. also swap things around.
-    // holy shit its disgusting lmao :)
     void goUp(Node* node) {
         if (node == nullptr) return;
         if (node->parent == nullptr) return;
-        if (node->val < node->parent->val) {
-            Node* parent = node->parent;
-            int degree = node->parent->degree;
-            Node* node_right = node->right;
-            Node* tmp = node;
-            Node* parent_sibling = findLeftSibling(parent);
-            Node* node_sibling = findLeftSibling(node);
-            parent->degree = node->degree;
-            node->degree = degree;
-            node->parent = parent->parent;
-            node->child = parent->child;
-            if (parent_sibling != nullptr) 
-                parent_sibling->right = node;
-            node->right = parent->right;
-            if (parent->parent != nullptr && parent->parent->child == parent) {
-                parent->parent->child = node;
-            }
+        if (node->parent->val > node->val) {
+            int tmp = node->val;
+            node->val = node->parent->val;
+            node->parent->val = tmp;
         }
     }
     public:
     BHeap(): heap(nullptr) {}
-    void insert(int val) {
+    Node* insert(int val) {
         Node* new_node = new Node(val);
         heap = mergeHeaps(heap, new_node);
+        return new_node;
     }
     void display() {
         displayChildren(heap);
@@ -187,6 +163,10 @@ class BHeap {
             cout << " ) ";
             tmp = tmp->right;
         }
+    }
+    void decrease_key(Node* node, int val) {
+        node->val = val;
+        goUp(node);
     }
 
     optional<int> peek_min() {
@@ -204,17 +184,13 @@ class BHeap {
         deleteAll(heap);
     }
 };
-// TODO: fix bug with two same values
-// 4 of the same values in a row break everything :)
+
 void tests() {
     BHeap bh;
-    for(size_t i = 9; i > 6; i--) {
+    Node* node = bh.insert(10);
+    for(size_t i = 9; i > 0; i--) {
         bh.insert(i);
     }
-    // bh.insert(10);
-    // bh.insert(10);
-    // bh.insert(10);
-    // bh.insert(10);
     if (auto minim = bh.peek_min()) {
         cout << *minim << endl;
     }
