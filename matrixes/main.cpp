@@ -304,11 +304,11 @@ Matrix strassenWrap(Matrix& m1, Matrix& m2) {
     return ret;
 }
 
-Matrix methodForwarder(Matrix m1, Matrix m2) {
+Matrix methodForwarder(Matrix& m1, Matrix& m2) {
     return m1 * m2;
 }
 
-float timeMatrixMul(function<Matrix(Matrix, Matrix)> func, size_t size) {
+float timeMatrixMul(function<Matrix(Matrix&, Matrix&)> func, size_t size) {
     Matrix m1(size); 
     m1.fill();
     Matrix m2(size); 
@@ -347,11 +347,13 @@ template<typename T> T standardDeviation(vector<T>& vec) {
 }
 
 
-void tests() {
+void bench(function<Matrix(Matrix&, Matrix&)> func, const char* name) {
+    cout << "-------------------------------------------" << endl;
+    cout << "tests for " << name << ": " << endl;
     vector<float> defaultMul;
     for (size_t i = 0; i < 5; i++) {
         srand(time(0));
-        auto time = timeMatrixMul(methodForwarder, 300);
+        auto time = timeMatrixMul(func, 100);
         defaultMul.push_back(time);
         // cout << time << endl;
     }
@@ -360,8 +362,26 @@ void tests() {
     auto standardDev = standardDeviation(defaultMul);
     cout << setprecision(6) << "mean: " << mean << endl << "geomean: " << geometric_mean << endl;
     cout << setprecision(6) << "SD: " << standardDev << endl;
+    cout << name << " tests ended." << endl;
+}
+
+void tests() {
+    bench(methodForwarder, "default matrix multiplication");
+    bench(strassenWrap, "strassen algorithm");
+    bench(recursiveWrap, "recursive algorithm");
+}
+
+void show_strassen_superiority() {
+    cout << "-------------------------------------------" << endl;
+    cout << "now we show when strassen is better" << endl;
+    auto time = timeMatrixMul(strassenWrap, 1000);
+    cout << "that was strassen: " << time << endl;
+    time = timeMatrixMul(methodForwarder, 1000);
+    cout << "well that was default algorithm: " << time << endl;
+    cout << "-------------------------------------------" << endl;
 }
 
 int main() {
     tests();
+    show_strassen_superiority();
 }
