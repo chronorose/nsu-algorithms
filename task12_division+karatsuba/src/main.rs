@@ -3,7 +3,6 @@ use core::fmt;
 use std::{
     cmp,
     collections::VecDeque,
-    io,
     ops::{Add, Div, Mul, Sub},
 };
 
@@ -16,7 +15,14 @@ fn zero_last_places(vector: &mut Vec<u8>, new_size: usize) -> i32 {
     amount
 }
 
-fn karatsuba(mut first: BigInt, mut second: BigInt) -> BigInt {
+fn karatsuba(first: BigInt, second: BigInt) -> BigInt {
+    let sign = (first.sign != second.sign) && (first.sign || second.sign);
+    let mut kres = karatsuba_helper(first, second);
+    kres.sign = sign;
+    return kres;
+}
+
+fn karatsuba_helper(mut first: BigInt, mut second: BigInt) -> BigInt {
     if first.vector.len() < 2 || second.vector.len() < 2 {
         return first * second;
     }
@@ -104,11 +110,15 @@ impl Div<BigInt> for BigInt {
 #[derive(Debug, Clone)]
 struct BigInt {
     vector: Vec<u8>,
+    sign: bool,
 }
 
 impl BigInt {
     fn to_string(self) -> String {
         let mut new = String::new();
+        if self.sign {
+            new.push('-');
+        }
         for i in self.vector.iter() {
             new.push_str(&i.to_string());
         }
@@ -118,7 +128,10 @@ impl BigInt {
         BigInt::from_str(&number.to_string())
     }
     fn into_big_int(vector: Vec<u8>) -> Self {
-        let big_int = BigInt { vector };
+        let big_int = BigInt {
+            vector,
+            sign: false,
+        };
         match big_int.check_correctness() {
             Ok(sl) => sl,
             Err(err) => {
@@ -128,11 +141,15 @@ impl BigInt {
         }
     }
     fn into_big_no_check(vector: Vec<u8>) -> Self {
-        BigInt { vector }
+        BigInt {
+            vector,
+            sign: false,
+        }
     }
     fn into_big_ref(vector: &Vec<u8>) -> Self {
         let big_int = BigInt {
             vector: vector.to_vec(),
+            sign: false,
         };
         match big_int.check_correctness() {
             Ok(sl) => sl,
@@ -145,15 +162,23 @@ impl BigInt {
     fn from_str(string: &str) -> Self {
         let big_int = BigInt {
             vector: string.to_string().into_bytes(),
+            sign: false,
         };
         big_int.check_correctness().unwrap()
     }
     fn new() -> Self {
-        BigInt { vector: Vec::new() }
+        BigInt {
+            vector: Vec::new(),
+            sign: false,
+        }
     }
     fn check_correctness(mut self) -> Result<Self, Self> {
         let mut non_zero = false;
         self.vector.reverse();
+        if self.vector[self.vector.len() - 1] == b'-' {
+            self.sign = true;
+            self.vector.pop();
+        }
         for i in self.vector.clone().iter().rev() {
             if !non_zero {
                 if self.vector.len() > 1 && *i == 48 {
@@ -196,7 +221,10 @@ impl BigInt {
         first_diff + second_diff
     }
     fn zero() -> Self {
-        BigInt { vector: vec![48] }
+        BigInt {
+            vector: vec![48],
+            sign: false,
+        }
     }
     fn more(&self, other: &BigInt) -> bool {
         let first = self.vector.clone();
@@ -242,6 +270,9 @@ fn vecdeque_to_vec(deque: VecDeque<u8>) -> Vec<u8> {
 impl fmt::Display for BigInt {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut str = String::new();
+        if self.sign {
+            str.push_str("-");
+        }
         for i in self.vector.iter() {
             str.push_str(&i.escape_ascii().to_string());
         }
@@ -251,9 +282,9 @@ impl fmt::Display for BigInt {
 
 impl Mul<BigInt> for BigInt {
     type Output = BigInt;
-    fn mul(self, b: BigInt) -> Self::Output {
+    fn mul(self, bi: BigInt) -> Self::Output {
         let a = self.vector;
-        let b = b.vector;
+        let b = bi.vector;
         let mut c = BigInt::zero();
         let mut surplus = 0;
         let mut endpoint = 0;
@@ -283,6 +314,7 @@ impl Mul<BigInt> for BigInt {
             surplus_vec.reverse();
             c = c + BigInt::into_big_int(surplus_vec);
         }
+        c.sign = (self.sign != bi.sign) && (self.sign || bi.sign);
         c.check_correctness().unwrap()
     }
 }
@@ -360,17 +392,17 @@ impl Sub<BigInt> for BigInt {
 }
 
 fn main() {
-    let mut first = String::new();
-    let mut second = String::new();
-    let _ = io::stdin().read_line(&mut first).unwrap();
-    let _ = io::stdin().read_line(&mut second).unwrap();
-    let first1 = BigInt::into_big_int(first.clone().trim().to_string().into_bytes());
-    let second = BigInt::into_big_int(second.trim().to_string().into_bytes());
-    println!("result = {}", first1 / second);
-    // println!(
-    //     "result = {}",
-    //     BigInt::from_str("1440") / BigInt::from_str("7")
-    // );
+    // let mut first = String::new();
+    // let mut second = String::new();
+    // let _ = io::stdin().read_line(&mut first).unwrap();
+    // let _ = io::stdin().read_line(&mut second).unwrap();
+    // let first1 = BigInt::into_big_int(first.clone().trim().to_string().into_bytes());
+    // let second = BigInt::into_big_int(second.trim().to_string().into_bytes());
+    // println!("result = {}", karatsuba(first1, second));
+    println!(
+        "result = {}",
+        BigInt::from_str("-1440") * BigInt::from_str("7")
+    );
 }
 
 #[cfg(test)]
@@ -381,6 +413,18 @@ mod tests {
         assert_eq!(
             kar_bi("132", "134").to_string(),
             stolb("132", "134").to_string()
+        );
+        assert_eq!(
+            kar_bi("-132", "134").to_string(),
+            stolb("-132", "134").to_string()
+        );
+        assert_eq!(
+            kar_bi("132", "-134").to_string(),
+            stolb("132", "-134").to_string()
+        );
+        assert_eq!(
+            kar_bi("-132", "-134").to_string(),
+            stolb("-132", "-134").to_string()
         );
         assert_eq!(
             kar_bi("1", "134").to_string(),
