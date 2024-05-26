@@ -25,15 +25,27 @@ void test() {
     cout << "please enter precision: ";
     double precision;
     cin >> precision;
+    srand(time(0));
+    unordered_set<string> unique_ones;
+    vector<Ip> vec(amount);
+    for (size_t i = 0; i < amount; ++i) {
+        do {
+            Ip ip;
+            if (unique_ones.contains(ip.to_string())) continue;
+            unique_ones.insert(ip.to_string());
+            vec[i] = ip;
+        } while(0);
+    }
     BloomFilter bf(precision, amount);
     for (size_t i = 0; i < amount; i++) {
-        Ip ip;
-        bf.insert(ip);
+        bf.insert(vec[i]);
         cout << "-------------------------------------" << endl;
         cout << "After inserting: ";
-        cout << ip << " Bloom filter looks as follows: " << endl;
+        cout << vec[i] << " Bloom filter looks as follows: " << endl;
         cout << bf << endl << endl;
     }
+    cout << "FP: " << bf.collisions << endl;
+    cout << "FP rate: " << (double)bf.collisions / (double) amount << endl;
 }
 
 int main() {
