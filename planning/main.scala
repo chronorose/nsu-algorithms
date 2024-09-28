@@ -13,21 +13,25 @@ object TaskCompare extends Ordering[Task]:
 
 class UnionFind(size: Int):
   var arr: Array[Int] = new Array(size)
+  var ranks: Array[Int] = new Array(size)
   var sizes: Array[Int] = new Array(size) 
   var penalty: Int = 0
   for i <- 0 until size do
     arr(i) = i
+    ranks(i) = 0
     sizes(i) = 0
         
   def union(eq1: Int, eq2: Int) =
     val c1 = find(eq1)
     val c2 = find(eq2) 
-    if sizes(c1) >= sizes(c2) then
+    if ranks(c1) > ranks(c2) then
       sizes(c1) += sizes(c2)
       arr(c2) = c1 
     else
       sizes(c2) += sizes(c1) 
       arr(c1) = c2
+      if ranks(c1) == ranks(c2) then
+        ranks(c2) += 1
 
   def find(eq: Int): Int =
     if arr(eq) == eq then
@@ -45,11 +49,11 @@ class UnionFind(size: Int):
       sizes(index) += 1
       penalty += task.weight
       if index != size - 1 then
-        union(size - 1, index)
+        union(index, size - 1)
     else
       sizes(index) += 1
       if index != task.deadline then
-        union(task.deadline, index)
+        union(index, task.deadline)
     index
 
   override def toString(): String = 
@@ -93,5 +97,5 @@ def parseTest(path: String) =
 
   out.zipWithIndex.foreach(
     (task, i) => 
-      println(s"task with weight ${task.weight} and deadline ${task.deadline + 1} will be done at day $i"))
+      println(s"task with weight ${task.weight} and deadline ${task.deadline + 1} will be done at day ${i + 1}"))
   println(s"overall penalty: ${uf.penalty}")
