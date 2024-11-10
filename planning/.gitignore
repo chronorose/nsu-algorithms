@@ -1,3 +1,7 @@
 project/
 .bloop/
 .metals/
+.scala-build
+tests/*passed
+tests/*actual.txt
+.bsp

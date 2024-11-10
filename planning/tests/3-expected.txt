@@ -1,0 +1,6 @@
+task with weight 100 and deadline 1 will be done at day 1
+task with weight 120 and deadline 2 will be done at day 2
+task with weight 140 and deadline 3 will be done at day 3
+task with weight 160 and deadline 4 will be done at day 4
+task with weight 10000 and deadline 5 will be done at day 5
+overall penalty: 0

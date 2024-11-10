@@ -21,9 +21,10 @@ class UnionFind(size: Int):
     ranks(i) = 0
     sizes(i) = 0
         
-  def union(eq1: Int, eq2: Int) =
+  def union(eq1: Int, eq2: Int): Unit =
     val c1 = find(eq1)
     val c2 = find(eq2) 
+    if c1 == c2 then return
     if ranks(c1) > ranks(c2) then
       sizes(c1) += sizes(c2)
       arr(c2) = c1 
@@ -66,8 +67,6 @@ class UnionFind(size: Int):
     str.toString()
 
 def parseTest(path: String) =
-  // var deadlines: ArrayBuffer[Int] = ArrayBuffer()
-  // var penalties: ArrayBuffer[Int] = ArrayBuffer()
   var tasks: ArrayBuffer[Task] = ArrayBuffer()
   val lines = io.Source.fromFile(path).getLines().toList
   val first_line = lines.head
@@ -76,8 +75,6 @@ def parseTest(path: String) =
   for i <- 0 until amount do
     val Array(deadline, weight) = rest.head.split(" ").map(x => x.toInt) 
     tasks.append(Task(deadline - 1, weight))
-    // deadlines.append(deadline)
-    // penalties.append(weight)
     rest = rest.tail
   tasks
 
