@@ -26,7 +26,7 @@ func newPStack() PStack {
 	return PStack{stack}
 }
 
-func (stack *PStack) push(elem, version int) {
+func (stack *PStack) push(elem, version int) int {
 	prev_node := stack.stack[version]
 	node := PSNode{
 		len(stack.stack),
@@ -36,12 +36,13 @@ func (stack *PStack) push(elem, version int) {
 		false,
 	}
 	stack.stack = append(stack.stack, node)
+	return len(stack.stack) - 1
 }
 
-func (stack *PStack) pop(version int) (int, error) {
+func (stack *PStack) pop(version int) (int, int, error) {
 	node := stack.stack[version]
 	if node.none {
-		return -1, errors.New("empty stack")
+		return -1, -1, errors.New("empty stack")
 	}
 	prev := stack.stack[node.prev]
 	new_head := PSNode{
@@ -52,7 +53,7 @@ func (stack *PStack) pop(version int) (int, error) {
 		prev.none,
 	}
 	stack.stack = append(stack.stack, new_head)
-	return node.value, nil
+	return node.value, len(stack.stack) - 1, nil
 }
 
 func (stack *PStack) size(version int) int {

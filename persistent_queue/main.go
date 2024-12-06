@@ -3,31 +3,22 @@ package main
 import "fmt"
 
 func main() {
-	stack := newPStack()
-	for i := 0; i < 5; i++ {
-		stack.push(i, i)
-		fmt.Println(stack)
+	pqueue := newPQueue()
+	index := 0
+	for i := 0; i < 100; i++ {
+		index = pqueue.push(i, i)
 	}
-	// rtq := makeRTQueue()
-	// for i := 0; i < 100; i++ {
-	// 	rtq.push(i)
-	// }
-	// for i := 0; i < 30; i++ {
-	// 	fmt.Println(rtq.pop())
-	// }
-	// for i := 0; i < 100; i++ {
-	// 	rtq.push(i)
-	// }
-	// for i := 0; i < 30; i++ {
-	// 	fmt.Println(rtq.pop())
-	// }
-	// for i := 0; i < 100; i++ {
-	// 	rtq.push(i)
-	// }
-	// for i := 0; i < 30; i++ {
-	// 	fmt.Println(rtq.pop())
-	// }
-	// for i := 0; i < 30; i++ {
-	// 	fmt.Println(rtq.pop())
-	// }
+	for i := 0; i < 30; i++ {
+		el, new_index := pqueue.pop(index)
+		index = new_index
+		fmt.Println(el)
+	}
+	for i := 0; i < 100; i++ {
+		index = pqueue.push(index, i)
+	}
+	for i := 0; i < 30; i++ {
+		el, new_index := pqueue.pop(index)
+		index = new_index
+		fmt.Println(el)
+	}
 }
